@@ -1,54 +1,3 @@
-from fastapi import FastAPI, File, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
-from predict import predict_face_shape
-from glasses_overlay import generate_overlay_images
-import base64
-import os
-
-app = FastAPI()
-
-# Allow access from your frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.post("/predict")
-async def predict(file: UploadFile = File(...)):
-    try:
-        # Save uploaded image to disk
-        contents = await file.read()
-        temp_path = "temp_input.jpg"
-        with open(temp_path, "wb") as f:
-            f.write(contents)
-
-        # Predict face shape
-        face_shape = predict_face_shape(temp_path)
-
-        # Generate 3 overlays for that shape
-        overlay_bytes = generate_overlay_images(temp_path, face_shape)
-
-        # Convert overlays to base64
-        base64_images = []
-        for img_bytes in overlay_bytes:
-            encoded = base64.b64encode(img_bytes).decode("utf-8")
-            base64_images.append(encoded)
-
-        # Return everything in one response
-        return {
-            "face_shape": face_shape,
-            "images": base64_images
-        }
-
-    except Exception as e:
-        return {"error": str(e)}
-
-
-
-"""
 import os
 import cv2
 from predict import predict_face_shape
@@ -116,4 +65,3 @@ while True:
 
     except Exception as e:
         print(f"Error during prediction or overlay: {e}")
-"""
